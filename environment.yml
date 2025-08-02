@@ -1,0 +1,53 @@
+name: llm-comparison
+channels:
+  - conda-forge
+  - pytorch
+  - defaults
+dependencies:
+  # Python base
+  - python=3.9
+  
+  # PyTorch ecosystem (otimizado para M1 Mac)
+  - pytorch>=2.0.0
+  - torchvision
+  - torchaudio
+  
+  # Data science essentials
+  - pandas>=2.0.0
+  - numpy>=1.24.0
+  - scikit-learn>=1.3.0
+  
+  # Vector search (conda tem versão otimizada)
+  - faiss-cpu>=1.7.4
+  
+  # Visualization and web
+  - plotly>=5.0.0
+  - streamlit>=1.28.0
+  
+  # Development tools
+  - jupyter>=1.0.0
+  - tqdm>=4.65.0
+  
+  # Utilities
+  - python-dotenv>=1.0.0
+  
+  # Pip-only packages (não disponíveis via conda)
+  - pip
+  - pip:
+    # NLP models and transformers
+    - transformers>=4.35.0
+    - sentence-transformers>=2.2.2
+    - tokenizers>=0.15.0
+    
+    # API clients
+    - openai>=1.0.0
+    
+    # Evaluation metrics
+    - rouge-score>=0.1.2
+    
+    # Additional utilities
+    - pathlib2>=2.3.7
+    - accelerate>=0.20.0  # Para otimização de modelos
+    
+    # Dashboard extras
+    - plotly-express>=0.4.0
