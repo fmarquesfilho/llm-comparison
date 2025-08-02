@@ -17,10 +17,9 @@ Validar em **2 semanas** (40h) qual arquitetura é mais adequada para o domínio
 git clone <repo>
 cd otoh-llm-comparison
 
-# Crie ambiente virtual
-python -m venv venv
-source venv/bin/activate  # macOS/Linux
-# Windows: venv\Scripts\activate
+# Crie ambiente conda
+conda create -n llm-comparison python=3.9 -y
+conda activate llm-comparison
 
 # Instale dependências essenciais
 pip install -r requirements.txt
@@ -247,8 +246,23 @@ pip install --upgrade -r requirements.txt
 
 **4. FAISS não instala:**
 ```bash
-# Use versão CPU
+# Com conda (melhor para M1 Mac)
+conda install -c conda-forge faiss-cpu
+
+# Ou com pip se conda falhar
 pip install faiss-cpu --force-reinstall
+```
+
+**5. Conflitos de ambiente:**
+```bash
+# Lista ambientes conda
+conda env list
+
+# Remove ambiente se corrupto
+conda env remove -n llm-comparison
+
+# Recria ambiente limpo
+conda create -n llm-comparison python=3.9 -y
 ```
 
 ### Logs Detalhados
