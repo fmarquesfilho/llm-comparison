@@ -396,3 +396,4 @@ if __name__ == "__main__":
     # Teste standalone
     logging.basicConfig(level=logging.INFO)
     test_api_baseline()
+  
