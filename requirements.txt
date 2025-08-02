@@ -1,6 +1,3 @@
-# Requirements MVP - LLM Comparison
-# Otimizado para Mac M1 e desenvolvimento solo
-
 # Core ML - versões testadas em M1
 torch>=2.0.0
 transformers>=4.35.0
@@ -30,15 +27,3 @@ pathlib2>=2.3.7
 
 # Development
 jupyter>=1.0.0
-
-# REMOVIDO para MVP:
-# - bitsandbytes-darwin (problemas compatibilidade)
-# - peft, accelerate (fine-tuning futuro)
-# - gradio (Streamlit suficiente)
-# - PyPDF2, python-docx (apenas JSON)
-# - datasets (dados sintéticos)
-# - plotly, seaborn (matplotlib básico)
-# - wandb, haystack (over-engineering)
-
-# Opcional - descomente se precisar
-# matplotlib>=3.7.0  # Para gráficos básicos se precisar
