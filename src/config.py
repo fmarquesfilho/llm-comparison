@@ -76,7 +76,6 @@ class Config:
         """Cria diretórios necessários"""
         directories = [
             cls.DATA_DIR / "raw",
-            cls.DATA_DIR / "processed", 
             cls.DATA_DIR / "embeddings",
             cls.DATA_DIR / "evaluation",
             cls.MODELS_DIR / "embeddings",
