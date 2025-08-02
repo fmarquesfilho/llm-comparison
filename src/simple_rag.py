@@ -1,4 +1,4 @@
-# src/architectures/rag_simple.py
+# src/simple_rag.py
 import logging
 from typing import List, Dict, Any, Optional
 import faiss
@@ -9,7 +9,7 @@ from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 import torch
 from pathlib import Path
 
-from ..config import Config
+from .config import Config
 
 logger = logging.getLogger(__name__)
 

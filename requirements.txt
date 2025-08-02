@@ -1,57 +1,44 @@
-# Requirements otimizado para Mac M1
-# Instale primeiro via conda quando possível, depois via pip
+# Requirements MVP - LLM Comparison
+# Otimizado para Mac M1 e desenvolvimento solo
 
-# Core ML/AI packages
+# Core ML - versões testadas em M1
 torch>=2.0.0
-torchvision>=0.15.0  
-torchaudio>=2.0.0
 transformers>=4.35.0
 sentence-transformers>=2.2.2
-datasets>=2.14.0
-accelerate>=0.24.0
-peft>=0.6.0
 
-# Para M1 - instalar via pip após conda
-bitsandbytes-darwin>=0.41.0; sys_platform == "darwin"
-bitsandbytes>=0.41.0; sys_platform != "darwin"
-
-# Vector search
+# Vector search - CPU apenas para simplicidade
 faiss-cpu>=1.7.4
-faiss-gpu>=1.7.4; sys_platform == "linux"
 
-# Document processing  
-PyPDF2>=3.0.0
-python-docx>=0.8.11
-python-dotenv>=1.0.0
-
-# Data processing
+# Data processing essencial
 pandas>=2.0.0
 numpy>=1.24.0
 scikit-learn>=1.3.0
 
-# Evaluation metrics
+# APIs externas para baseline
+openai>=1.0.0
+
+# Evaluation básica
 rouge-score>=0.1.2
-nltk>=3.8
 
-# Visualization
-matplotlib>=3.7.0
-seaborn>=0.12.0
-plotly>=5.17.0
-
-# Web interfaces
+# Web interface
 streamlit>=1.28.0
-gradio>=3.50.0
 
 # Utilities
 tqdm>=4.65.0
+python-dotenv>=1.0.0
 pathlib2>=2.3.7
-click>=8.1.0
 
 # Development
 jupyter>=1.0.0
-notebook>=6.5.0
-ipywidgets>=8.0.0
 
-# Optional: Advanced features
-# haystack-ai>=2.0.0  # Para RAG avançado
-# wandb>=0.15.0       # Para tracking de experimentos
+# REMOVIDO para MVP:
+# - bitsandbytes-darwin (problemas compatibilidade)
+# - peft, accelerate (fine-tuning futuro)
+# - gradio (Streamlit suficiente)
+# - PyPDF2, python-docx (apenas JSON)
+# - datasets (dados sintéticos)
+# - plotly, seaborn (matplotlib básico)
+# - wandb, haystack (over-engineering)
+
+# Opcional - descomente se precisar
+# matplotlib>=3.7.0  # Para gráficos básicos se precisar
