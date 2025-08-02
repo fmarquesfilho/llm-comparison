@@ -18,11 +18,11 @@ git clone <repo>
 cd otoh-llm-comparison
 
 # Crie ambiente conda
-conda create -n llm-comparison python=3.9 -y
+conda env create -f environment.yml
 conda activate llm-comparison
 
-# Instale dependências essenciais
-pip install -r requirements.txt
+# Atualiza ambiente
+conda env update -f environment.yml
 
 # Configure API keys (OPCIONAL - sistema funciona sem)
 echo "OPENAI_API_KEY=sua_key_aqui" > .env
