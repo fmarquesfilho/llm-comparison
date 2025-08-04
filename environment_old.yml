@@ -1,4 +1,4 @@
-name: llm-comparison-multi
+name: llm-comparison
 channels:
   - conda-forge
   - pytorch
@@ -20,9 +20,6 @@ dependencies:
   # Vector search (conda tem versão otimizada)
   - faiss-cpu>=1.7.4
   
-  # Graph processing (para Cenário B - Hybrid RAG)
-  - networkx>=3.0
-  
   # Visualization and web
   - plotly>=5.0.0
   - streamlit>=1.28.0
@@ -34,9 +31,6 @@ dependencies:
   # Utilities
   - python-dotenv>=1.0.0
   
-  # Date/time processing para temporal anchors
-  - python-dateutil>=2.8.0
-  
   # Pip-only packages (não disponíveis via conda)
   - pip
   - pip:
@@ -45,7 +39,7 @@ dependencies:
     - sentence-transformers>=2.2.2
     - tokenizers>=0.15.0
     
-    # API clients para Cenário C
+    # API clients
     - openai>=1.0.0
     
     # Evaluation metrics
@@ -57,14 +51,3 @@ dependencies:
     
     # Dashboard extras
     - plotly-express>=0.4.0
-    
-    # Graph visualization (opcional)
-    - matplotlib>=3.5.0
-    - seaborn>=0.11.0
-    
-    # Para processamento temporal avançado
-    - dateparser>=1.1.0
-    
-    # Performance monitoring
-    - psutil>=5.9.0
-    
