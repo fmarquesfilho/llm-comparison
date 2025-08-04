@@ -1,6 +1,6 @@
 # 🤖 Sistema Multi-Cenário RAG - Construção Civil
 
-Sistema completo para comparação entre três abordagens de NLP aplicadas ao domínio de construção civil, agora com um grafo de conhecimento temporal implementado com **Kùzu DB**.
+Sistema completo para comparação entre três abordagens de NLP aplicadas ao domínio de construção civil.
 
 ## 🎯 Cenários Implementados
 
