@@ -1,23 +1,25 @@
-name: otoh_env
+name: otoh-llm
 channels:
-  - defaults
   - conda-forge
+  - defaults
 dependencies:
   - python=3.10
-  - pip
   - pandas
   - numpy
+  - networkx
+  - pydantic>=2.0
   - scikit-learn
-  - kuzu-python
-  - jupyter
-  - matplotlib
-  - ipykernel
-  - openai
-  - tiktoken
   - sentence-transformers
+  - transformers
   - pytorch
+  - tqdm
+  - python-dotenv
+  - jupyter
+  - ipykernel
+  - pip
   - pip:
-      - tqdm
-      - pyyaml
-      - langchain
-      - llama-index
+    - langchain
+    - openai
+    - llama-index
+    - loguru
+    - pyyaml
