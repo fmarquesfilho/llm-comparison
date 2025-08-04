@@ -7,7 +7,7 @@ dependencies:
   # Python base
   - python=3.9
   
-  # PyTorch ecosystem (otimizado para M1 Mac)
+  # PyTorch ecosystem
   - pytorch>=2.0.0
   - torchvision
   - torchaudio
@@ -17,11 +17,8 @@ dependencies:
   - numpy>=1.24.0
   - scikit-learn>=1.3.0
   
-  # Vector search (conda tem versão otimizada)
+  # Vector search
   - faiss-cpu>=1.7.4
-  
-  # Graph processing (para Cenário B - Hybrid RAG)
-  - networkx>=3.0
   
   # Visualization and web
   - plotly>=5.0.0
@@ -34,10 +31,10 @@ dependencies:
   # Utilities
   - python-dotenv>=1.0.0
   
-  # Date/time processing para temporal anchors
+  # Date/time processing
   - python-dateutil>=2.8.0
   
-  # Pip-only packages (não disponíveis via conda)
+  # Pip-only packages
   - pip
   - pip:
     # NLP models and transformers
@@ -45,7 +42,10 @@ dependencies:
     - sentence-transformers>=2.2.2
     - tokenizers>=0.15.0
     
-    # API clients para Cenário C
+    # Graph Database (NOVO)
+    - kuzu>=0.2.2
+
+    # API clients
     - openai>=1.0.0
     
     # Evaluation metrics
@@ -53,8 +53,8 @@ dependencies:
     
     # Additional utilities
     - pathlib2>=2.3.7
-    - accelerate>=0.20.0  # Para otimização de modelos
-    
+    - accelerate>=0.20.0
+
     # Dashboard extras
     - plotly-express>=0.4.0
     
@@ -67,4 +67,3 @@ dependencies:
     
     # Performance monitoring
     - psutil>=5.9.0
-    
