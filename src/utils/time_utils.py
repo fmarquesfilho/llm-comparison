@@ -8,7 +8,7 @@ class FourierTimeEncoder:
         self.max_period = max_period
         self.frequencies = 1 / np.power(10000, 2 * (np.arange(dim // 2) / dim))
         
-    def encode(self, dt: datetime):
+    def encode(self, dt: datetime) -> np.ndarray:
         if isinstance(dt, str):
             dt = datetime.fromisoformat(dt)
             

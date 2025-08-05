@@ -7,7 +7,6 @@ from sklearn.metrics.pairwise import cosine_similarity as sklearn_cosine_similar
 from .events import DynamicEventUnit
 from ..utils.embeddings import cosine_similarity, get_embedding_model
 from ..utils.time_utils import FourierTimeEncoder, normalize_timestamp
-from ..config import settings
 
 logger = logging.getLogger(__name__)
 
