@@ -1,4 +1,4 @@
-name: otoh-llm
+name: llm-comparison-multi
 channels:
   - conda-forge
   - defaults
@@ -16,10 +16,48 @@ dependencies:
   - python-dotenv
   - jupyter
   - ipykernel
+  - plotly
+  - streamlit
   - pip
   - pip:
-    - langchain
-    - openai
-    - llama-index
+    # Core LLM and RAG libraries
+    - langchain>=0.1.0
+    - openai>=1.0.0
+    - llama-index>=0.9.0
+    
+    # Logging and utilities
     - loguru
     - pyyaml
+    
+    # Graph database
+    - kuzu>=0.4.0
+    
+    # Enhanced embeddings and ML
+    - faiss-cpu
+    - chromadb
+    
+    # Data processing
+    - datasets
+    - beautifulsoup4
+    - requests
+    
+    # Evaluation and metrics
+    - rouge-score
+    - bert-score
+    - evaluate
+    
+    # Development and testing
+    - pytest
+    - pytest-cov
+    - black
+    - flake8
+    - mypy
+    
+    # Visualization and dashboard
+    - streamlit-option-menu
+    - altair
+    - seaborn
+    
+    # Performance monitoring
+    - psutil
+    - memory-profiler
