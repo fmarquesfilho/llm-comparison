@@ -182,7 +182,8 @@ class KuzuTemporalGraphRAG:
             })
             
             # Cria relacionamentos direcionais
-            for row in result.get_next():
+            while result.has_next():
+                row = result.get_next()
                 other_event_id = row[0]
                 other_timestamp = datetime.fromisoformat(str(row[1]))
                 
@@ -242,7 +243,8 @@ class KuzuTemporalGraphRAG:
             })
             
             # Calcula similaridades e cria relacionamentos
-            for row in result.get_next():
+            while result.has_next():
+                row = result.get_next()
                 other_event_id = row[0]
                 other_embedding_text = row[1]
                 
@@ -327,7 +329,8 @@ class KuzuTemporalGraphRAG:
             
             # Converte resultados para DynamicEventUnit
             events = []
-            for row in result.get_next():
+            while result.has_next():
+                row = result.get_next()
                 event_data = {
                     'event_id': row[0],
                     'timestamp': datetime.fromisoformat(str(row[1])),
@@ -382,7 +385,8 @@ class KuzuTemporalGraphRAG:
             result = self.connection.execute(cypher_query, parameters=parameters)
             
             events = []
-            for row in result.get_next():
+            while result.has_next():
+                row = result.get_next()
                 event_data = {
                     'event_id': row[0],
                     'timestamp': datetime.fromisoformat(str(row[1])),
@@ -427,7 +431,8 @@ class KuzuTemporalGraphRAG:
             })
             
             patterns['common_sequences'] = []
-            for row in result.get_next():
+            while result.has_next():
+                row = result.get_next()
                 patterns['common_sequences'].append({
                     'from_type': row[0],
                     'to_type': row[1],
@@ -452,4 +457,216 @@ class KuzuTemporalGraphRAG:
                 'end_time': end_time.strftime('%Y-%m-%d %H:%M:%S')
             })
             
-            patterns['
+            patterns['central_events'] = []
+            while result.has_next():
+                row = result.get_next()
+                patterns['central_events'].append({
+                    'event_id': row[0],
+                    'event_type': row[1],
+                    'timestamp': str(row[2]),
+                    'connections': row[3]
+                })
+            
+            # Padrão 3: Análise de violações por período
+            violation_query = """
+            MATCH (e:Event)
+            WHERE e.timestamp >= datetime($start_time)
+              AND e.timestamp <= datetime($end_time)
+              AND e.violates_regulations = true
+            WITH e.hour as hour, COUNT(*) as violation_count
+            RETURN hour, violation_count
+            ORDER BY violation_count DESC
+            """
+            
+            result = self.connection.execute(violation_query, parameters={
+                'start_time': start_time.strftime('%Y-%m-%d %H:%M:%S'),
+                'end_time': end_time.strftime('%Y-%m-%d %H:%M:%S')
+            })
+            
+            patterns['violation_by_hour'] = {}
+            while result.has_next():
+                row = result.get_next()
+                patterns['violation_by_hour'][row[0]] = row[1]
+            
+            return patterns
+            
+        except Exception as e:
+            logger.error(f"Error extracting temporal patterns: {str(e)}")
+            return {}
+    
+    def generate_time_cot_response(self, query: str, retrieved_events: List[DynamicEventUnit]) -> str:
+        """
+        Gera resposta usando Time Chain-of-Thought com dados do Kùzu.
+        Implementa o raciocínio temporal estruturado do DyG-RAG.
+        """
+        if not retrieved_events:
+            return "Não foram encontrados eventos relevantes no grafo temporal."
+        
+        # Ordena eventos cronologicamente
+        timeline = sorted(retrieved_events, key=lambda e: e.timestamp)
+        
+        # Template Time-CoT adaptado para Kùzu
+        cot_steps = []
+        
+        # Passo 1: Identificar escopo temporal
+        if timeline:
+            start_time = min(e.timestamp for e in timeline)
+            end_time = max(e.timestamp for e in timeline)
+            cot_steps.append(f"**Escopo Temporal (Kùzu):** {start_time.strftime('%d/%m/%Y %H:%M')} a {end_time.strftime('%d/%m/%Y %H:%M')}")
+        
+        # Passo 2: Análise de conectividade do grafo
+        try:
+            # Conta conexões temporais dos eventos recuperados
+            event_ids = [f"'{e.event_id}'" for e in timeline]
+            connection_query = f"""
+            MATCH (e:Event)-[r:TemporalRelation]-(connected:Event)
+            WHERE e.event_id IN [{','.join(event_ids)}]
+            RETURN e.event_id, COUNT(r) as connections
+            ORDER BY connections DESC
+            """
+            
+            result = self.connection.execute(connection_query)
+            most_connected = None
+            total_connections = 0
+            
+            while result.has_next():
+                row = result.get_next()
+                if most_connected is None:
+                    most_connected = (row[0], row[1])
+                total_connections += row[1]
+            
+            cot_steps.append(f"**Análise de Grafo:** {total_connections} conexões temporais identificadas no conjunto")
+            if most_connected:
+                cot_steps.append(f"**Evento Central:** {most_connected[0]} com {most_connected[1]} conexões")
+                
+        except Exception as e:
+            logger.warning(f"Error in graph connectivity analysis: {str(e)}")
+        
+        # Passo 3: Sequência cronológica
+        if len(timeline) > 1:
+            sequence_desc = " → ".join([f"{e.event_type}({e.timestamp.strftime('%H:%M')})" for e in timeline[:5]])
+            if len(timeline) > 5:
+                sequence_desc += "..."
+            cot_steps.append(f"**Sequência Temporal:** {sequence_desc}")
+        
+        # Passo 4: Verificar violações
+        violations = [e for e in timeline if e.violates_noise_regulations()]
+        if violations:
+            cot_steps.append(f"**Violações Detectadas:** {len(violations)} eventos em desacordo com regulamentações")
+        
+        # Passo 5: Análise de padrões usando Kùzu
+        event_types = [e.event_type for e in timeline]
+        type_counts = {t: event_types.count(t) for t in set(event_types)}
+        most_frequent = max(type_counts.items(), key=lambda x: x[1])
+        cot_steps.append(f"**Padrão Dominante:** {most_frequent[0]} ({most_frequent[1]} ocorrências)")
+        
+        # Geração da resposta final
+        response_parts = [
+            "## Análise Temporal com Kùzu Graph Database\n",
+            "\n".join(cot_steps),
+            "\n### Resposta Baseada em Grafo:",
+            self._generate_kuzu_final_answer(query, timeline, violations)
+        ]
+        
+        return "\n\n".join(response_parts)
+    
+    def _generate_kuzu_final_answer(self, query: str, timeline: List[DynamicEventUnit], violations: List[DynamicEventUnit]) -> str:
+        """Gera resposta final usando insights do grafo Kùzu"""
+        if not timeline:
+            return "Não há dados suficientes no grafo temporal para responder à consulta."
+        
+        # Análise quantitativa
+        total_events = len(timeline)
+        avg_loudness = np.mean([e.loudness for e in timeline])
+        peak_event = max(timeline, key=lambda e: e.loudness)
+        
+        answer_parts = []
+        
+        # Resumo com contexto de grafo
+        answer_parts.append(f"Análise do grafo temporal identificou {total_events} eventos relevantes interconectados.")
+        answer_parts.append(f"Intensidade média: {avg_loudness:.1f} dB, com pico de {peak_event.loudness:.1f} dB ({peak_event.event_type} às {peak_event.timestamp.strftime('%H:%M')}).")
+        
+        # Violações com contexto temporal
+        if violations:
+            answer_parts.append(f"⚠️ ALERTA: {len(violations)} violações identificadas através da análise de conectividade temporal.")
+            
+            # Tenta identificar padrões nas violações
+            violation_hours = [v.timestamp.hour for v in violations]
+            if violation_hours:
+                most_common_hour = max(set(violation_hours), key=violation_hours.count)
+                answer_parts.append(f"Padrão detectado: violações concentradas às {most_common_hour}h.")
+        
+        # Recomendações baseadas em grafo
+        if violations or avg_loudness > 75:
+            answer_parts.append("Recomendação (baseada em análise de grafo): Implementar monitoramento preventivo nas conexões temporais identificadas.")
+        
+        return " ".join(answer_parts)
+    
+    def get_graph_statistics(self) -> Dict[str, Any]:
+        """Retorna estatísticas detalhadas do grafo Kùzu"""
+        try:
+            stats = {}
+            
+            # Contagem de nós
+            node_result = self.connection.execute("MATCH (e:Event) RETURN COUNT(*) as node_count")
+            if node_result.has_next():
+                stats['total_nodes'] = node_result.get_next()[0]
+            
+            # Contagem de arestas temporais
+            temporal_result = self.connection.execute("MATCH ()-[r:TemporalRelation]-() RETURN COUNT(*) as edge_count")
+            if temporal_result.has_next():
+                stats['temporal_edges'] = temporal_result.get_next()[0]
+            
+            # Contagem de arestas semânticas
+            semantic_result = self.connection.execute("MATCH ()-[r:SemanticRelation]-() RETURN COUNT(*) as edge_count")
+            if semantic_result.has_next():
+                stats['semantic_edges'] = semantic_result.get_next()[0]
+            
+            # Distribuição por tipo de evento
+            type_result = self.connection.execute("""
+                MATCH (e:Event) 
+                RETURN e.event_type, COUNT(*) as count 
+                ORDER BY count DESC
+            """)
+            
+            stats['event_type_distribution'] = {}
+            while type_result.has_next():
+                row = type_result.get_next()
+                stats['event_type_distribution'][row[0]] = row[1]
+            
+            # Taxa de violações
+            violation_result = self.connection.execute("""
+                MATCH (e:Event) 
+                RETURN 
+                    SUM(CASE WHEN e.violates_regulations THEN 1 ELSE 0 END) as violations,
+                    COUNT(*) as total
+            """)
+            
+            if violation_result.has_next():
+                row = violation_result.get_next()
+                if row[1] > 0:
+                    stats['violation_rate'] = row[0] / row[1]
+                else:
+                    stats['violation_rate'] = 0
+            
+            return stats
+            
+        except Exception as e:
+            logger.error(f"Error getting graph statistics: {str(e)}")
+            return {"error": str(e)}
+    
+    def close(self):
+        """Fecha a conexão com o banco Kùzu"""
+        try:
+            self.connection.close()
+            logger.info("Kùzu connection closed successfully")
+        except Exception as e:
+            logger.error(f"Error closing Kùzu connection: {str(e)}")
+    
+    def __del__(self):
+        """Destructor para garantir que a conexão seja fechada"""
+        try:
+            if hasattr(self, 'connection'):
+                self.close()
+        except:
+            pass

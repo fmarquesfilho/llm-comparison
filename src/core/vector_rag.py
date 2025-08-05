@@ -209,4 +209,112 @@ class TemporalVectorRAG:
             
             similarity = cosine_similarity(ref_embedding, self.text_embeddings[i])
             
-            if
+            if similarity >= similarity_threshold:
+                similar_events.append((event, similarity))
+        
+        # Ordena por similaridade
+        similar_events.sort(key=lambda x: x[1], reverse=True)
+        
+        logger.info(f"Found {len(similar_events)} similar events to {reference_event.event_type}")
+        return similar_events
+    
+    def generate_summary_report(self, query: str, retrieved_events: List[Tuple[DynamicEventUnit, float]]) -> str:
+        """
+        Gera relatório baseado nos eventos recuperados.
+        Versão simplificada comparada ao Time-CoT do DyG-RAG.
+        """
+        if not retrieved_events:
+            return "Não foram encontrados eventos relevantes para a consulta."
+        
+        events = [event for event, _ in retrieved_events]
+        
+        # Estatísticas básicas
+        total_events = len(events)
+        avg_loudness = np.mean([e.loudness for e in events])
+        peak_event = max(events, key=lambda e: e.loudness)
+        
+        # Violações
+        violations = [e for e in events if e.violates_noise_regulations()]
+        
+        # Tipos de eventos
+        event_types = [e.event_type for e in events]
+        type_counts = {t: event_types.count(t) for t in set(event_types)}
+        most_frequent = max(type_counts.items(), key=lambda x: x[1]) if type_counts else ("N/A", 0)
+        
+        # Monta resposta
+        report_parts = [
+            f"## Análise de {total_events} Eventos Sonoros\n",
+            f"**Intensidade média:** {avg_loudness:.1f} dB",
+            f"**Pico de ruído:** {peak_event.loudness:.1f} dB ({peak_event.event_type} em {peak_event.timestamp.strftime('%d/%m %H:%M')})",
+            f"**Evento mais frequente:** {most_frequent[0]} ({most_frequent[1]} ocorrências)"
+        ]
+        
+        if violations:
+            report_parts.append(f"\n⚠️ **{len(violations)} violações** de normas detectadas:")
+            for v in violations[:3]:  # Mostra apenas as 3 primeiras
+                report_parts.append(f"- {v.event_type} ({v.loudness:.1f} dB) em {v.timestamp.strftime('%d/%m %H:%M')}")
+        
+        if violations or avg_loudness > 75:
+            report_parts.append("\n**Recomendação:** Revisar procedimentos operacionais e implementar controles acústicos.")
+        
+        return "\n".join(report_parts)
+    
+    def get_noise_pattern_analysis(self, hours: int = 24) -> Dict[str, Any]:
+        """
+        Analisa padrões de ruído nas últimas X horas.
+        """
+        if not self.events:
+            return {"error": "No events available"}
+        
+        from datetime import timedelta
+        cutoff_time = datetime.now() - timedelta(hours=hours)
+        recent_events = [e for e in self.events if e.timestamp >= cutoff_time]
+        
+        if not recent_events:
+            return {"error": f"No events in last {hours} hours"}
+        
+        # Análise por hora
+        hourly_stats = {}
+        for event in recent_events:
+            hour = event.timestamp.hour
+            if hour not in hourly_stats:
+                hourly_stats[hour] = {"count": 0, "avg_loudness": [], "violations": 0}
+            
+            hourly_stats[hour]["count"] += 1
+            hourly_stats[hour]["avg_loudness"].append(event.loudness)
+            if event.violates_noise_regulations():
+                hourly_stats[hour]["violations"] += 1
+        
+        # Processa médias
+        for hour_data in hourly_stats.values():
+            hour_data["avg_loudness"] = np.mean(hour_data["avg_loudness"])
+        
+        return {
+            "total_events": len(recent_events),
+            "timespan_hours": hours,
+            "hourly_breakdown": hourly_stats,
+            "peak_hour": max(hourly_stats.items(), key=lambda x: x[1]["avg_loudness"])[0] if hourly_stats else None,
+            "total_violations": sum(stats["violations"] for stats in hourly_stats.values())
+        }
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """Retorna estatísticas do sistema para monitoramento"""
+        if not self.events:
+            return {"total_events": 0, "status": "empty"}
+        
+        return {
+            "total_events": len(self.events),
+            "time_range": {
+                "start": self._min_time.isoformat() if self._min_time else None,
+                "end": self._max_time.isoformat() if self._max_time else None
+            },
+            "embedding_dimensions": {
+                "text": len(self.text_embeddings[0]) if self.text_embeddings else 0,
+                "temporal": len(self.temporal_embeddings[0]) if self.temporal_embeddings else 0,
+                "combined": len(self.combined_embeddings[0]) if self.combined_embeddings else 0
+            },
+            "cache_size": len(self._embedding_cache),
+            "time_weight": self.time_weight,
+            "avg_loudness": np.mean([e.loudness for e in self.events]),
+            "violation_rate": sum(1 for e in self.events if e.violates_noise_regulations()) / len(self.events)
+        }

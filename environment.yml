@@ -10,54 +10,31 @@ dependencies:
   - pydantic>=2.0
   - scikit-learn
   - sentence-transformers
-  - transformers
-  - pytorch
   - tqdm
   - python-dotenv
-  - jupyter
-  - ipykernel
   - plotly
   - streamlit
   - pip
   - pip:
-    # Core LLM and RAG libraries
-    - langchain>=0.1.0
+    # Core dependencies para o projeto
     - openai>=1.0.0
-    - llama-index>=0.9.0
-    
-    # Logging and utilities
     - loguru
-    - pyyaml
     
-    # Graph database
+    # Graph database (Kùzu)
     - kuzu>=0.4.0
     
-    # Enhanced embeddings and ML
+    # Embedding e busca vetorial
     - faiss-cpu
-    - chromadb
     
-    # Data processing
-    - datasets
-    - beautifulsoup4
-    - requests
-    
-    # Evaluation and metrics
+    # Avaliação
     - rouge-score
     - bert-score
-    - evaluate
     
-    # Development and testing
+    # Development e testing
     - pytest
     - pytest-cov
     - black
     - flake8
-    - mypy
-    
-    # Visualization and dashboard
-    - streamlit-option-menu
-    - altair
-    - seaborn
     
     # Performance monitoring
     - psutil
-    - memory-profiler
