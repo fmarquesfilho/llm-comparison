@@ -112,7 +112,7 @@ def generate_synthetic_data(num_events: int = 150) -> List[DynamicEventUnit]:
         type_config = event_types[event_type]
         
         # Gera timestamp com distribuição mais realista
-        days_offset = np.random.uniform(0, 7)
+        days_offset = float(np.random.uniform(0, 7))  # Convert to Python float
         
         # Distribuição de probabilidade por hora
         hour_weights = np.array([
@@ -122,19 +122,19 @@ def generate_synthetic_data(num_events: int = 150) -> List[DynamicEventUnit]:
             0.03, 0.02, 0.01, 0.01, 0.01, 0.01   # 18-23h (decrescente)
         ])
         hour_weights = hour_weights / hour_weights.sum()
-        hour_weight = np.random.choice(range(24), p=hour_weights)
+        hour_weight = int(np.random.choice(range(24), p=hour_weights))  # Convert to Python int
         
         timestamp = base_time + timedelta(
             days=days_offset,
             hours=hour_weight,
-            minutes=np.random.randint(0, 60),
-            seconds=np.random.randint(0, 60)
+            minutes=int(np.random.randint(0, 60)),  # Convert to Python int
+            seconds=int(np.random.randint(0, 60))   # Convert to Python int
         )
         
         # Gera intensidade com variação realística
         base_loudness = type_config['base_loudness']
         variation = type_config['variation']
-        loudness = max(35, min(120, np.random.normal(base_loudness, variation)))
+        loudness = max(35, min(120, float(np.random.normal(base_loudness, variation))))  # Convert to Python float
         
         # Metadados contextuais
         metadata = {
@@ -142,7 +142,7 @@ def generate_synthetic_data(num_events: int = 150) -> List[DynamicEventUnit]:
             'location': np.random.choice(locations),
             'equipment': event_type,
             'weather': np.random.choice(['claro', 'nublado', 'chuva_leve']),
-            'crew_size': np.random.randint(2, 12)
+            'crew_size': int(np.random.randint(2, 12))  # Convert to Python int
         }
         
         # Cria evento
@@ -154,8 +154,8 @@ def generate_synthetic_data(num_events: int = 150) -> List[DynamicEventUnit]:
             sensor_id=np.random.choice(sensors),
             description=type_config['description'],
             metadata=metadata,
-            duration_seconds=np.random.uniform(30, 300),
-            confidence_score=np.random.uniform(0.7, 0.98)
+            duration_seconds=float(np.random.uniform(30, 300)),   # Convert to Python float
+            confidence_score=float(np.random.uniform(0.7, 0.98)) # Convert to Python float
         )
         
         events.append(event)
@@ -331,7 +331,7 @@ class MultiScenarioComparison:
             
             # Score de relevância estimado para DyG-RAG
             if retrieved_events:
-                relevance_score = min(0.95, max(0.6, 0.85 + np.random.normal(0, 0.05)))
+                relevance_score = min(0.95, max(0.6, 0.85 + float(np.random.normal(0, 0.05))))
             else:
                 relevance_score = 0.0
             
@@ -366,7 +366,7 @@ class MultiScenarioComparison:
             end_time = time.time()
             
             # Score de relevância estimado para LLM-only
-            relevance_score = min(0.8, max(0.3, 0.60 + np.random.normal(0, 0.08)))
+            relevance_score = min(0.8, max(0.3, 0.60 + float(np.random.normal(0, 0.08))))
             
             return {
                 'answer': response,
