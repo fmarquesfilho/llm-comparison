@@ -1,4 +1,1 @@
-# src/config/__init__.py
-from . import settings
-
-__all__ = ['settings']
+# Deixa vazio para evitar problemas de import circular

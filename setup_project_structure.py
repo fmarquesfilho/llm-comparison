@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Script para criar a estrutura de diretórios necessária do projeto
+Versão corrigida com criação de arquivos essenciais
 """
 
 import os
@@ -22,6 +23,8 @@ def create_project_structure():
         "src/core",
         "src/utils",
         "src/config",
+        "src/pipelines",
+        "src/evaluation",
         "app"
     ]
     
@@ -38,6 +41,72 @@ def create_project_structure():
             if not init_file.exists():
                 init_file.touch()
                 print(f"✅ Criado: {init_file}")
+    
+    # Cria arquivo router.py que está faltando
+    router_file = base_dir / "src" / "core" / "router.py"
+    if not router_file.exists():
+        router_content = '''"""
+Query Router para direcionamento de consultas
+"""
+
+class QueryRouter:
+    """Router simples para direcionamento de consultas"""
+    
+    def __init__(self):
+        pass
+    
+    def route_query(self, query: str) -> str:
+        """Roteia consulta para o método mais apropriado"""
+        query_lower = query.lower()
+        
+        if any(word in query_lower for word in ['quantos', 'count', 'número']):
+            return 'simple'
+        elif any(word in query_lower for word in ['padrão', 'pattern', 'correlação', 'porque']):
+            return 'complex'
+        else:
+            return 'medium'
+'''
+        router_file.write_text(router_content, encoding='utf-8')
+        print(f"✅ Criado: {router_file}")
+    
+    # Cria arquivos de pipeline que estão faltando
+    ingestion_file = base_dir / "src" / "pipelines" / "ingestion.py"
+    if not ingestion_file.exists():
+        ingestion_content = '''"""
+Pipeline de ingestão de dados
+"""
+
+class DataIngestionPipeline:
+    """Pipeline para ingestão de dados de eventos"""
+    
+    def __init__(self):
+        pass
+    
+    def process_data(self, data):
+        """Processa dados de entrada"""
+        return data
+'''
+        ingestion_file.write_text(ingestion_content, encoding='utf-8')
+        print(f"✅ Criado: {ingestion_file}")
+    
+    query_pipeline_file = base_dir / "src" / "pipelines" / "query.py"
+    if not query_pipeline_file.exists():
+        query_pipeline_content = '''"""
+Pipeline de processamento de consultas
+"""
+
+class QueryProcessingPipeline:
+    """Pipeline para processamento de consultas"""
+    
+    def __init__(self):
+        pass
+    
+    def process_query(self, query: str):
+        """Processa consulta"""
+        return query
+'''
+        query_pipeline_file.write_text(query_pipeline_content, encoding='utf-8')
+        print(f"✅ Criado: {query_pipeline_file}")
     
     print("\n🎯 Estrutura de diretórios criada com sucesso!")
     print("\nPróximos passos:")
