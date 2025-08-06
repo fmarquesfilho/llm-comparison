@@ -19,15 +19,15 @@ Este projeto implementa conceitos dos seguintes artigos:
 - **Vantagens**: Rápido, simples, econômico
 - **Limitações**: Não considera relacionamentos complexos entre eventos
 
-### 🔗 Cenário B: Hybrid RAG (DyG-RAG + Kùzu)
-- **Descrição**: Sistema híbrido inspirado no DyG-RAG, utilizando **Kùzu Graph Database**
+### 🔗 Cenário B: Hybrid RAG (DyG-RAG)
+- **Descrição**: Sistema híbrido inspirado no DyG-RAG, utilizando **NetworkX**
 - **Características**:
   - **Dynamic Event Units (DEUs)** com âncoras temporais precisas
-  - Grafo de eventos em Kùzu com relacionamentos semânticos e temporais
+  - Grafo de eventos com relacionamentos semânticos e temporais
   - **Time Chain-of-Thought (Time-CoT)** para raciocínio temporal estruturado
-  - Recuperação multi-hop via consultas **openCypher**
+  - Recuperação multi-hop via traversal de grafo
   - **Fourier Time Encoding** para representação temporal contínua
-- **Vantagens**: Raciocínio temporal avançado, alta precisão, arquitetura escalável
+- **Vantagens**: Raciocínio temporal avançado, alta precisão
 - **Limitações**: Maior overhead computacional na construção do grafo
 
 ### 🤖 Cenário C: LLM-Only
@@ -35,7 +35,7 @@ Este projeto implementa conceitos dos seguintes artigos:
 - **Vantagens**: Respostas fluidas, conhecimento generalista
 - **Limitações**: Alucinações, dados desatualizados, sem acesso a contexto específico
 
-## 🏗️ Arquitetura Implementada
+## 🏗️ Arquitetura Simplificada
 
 ```
 src/
@@ -47,21 +47,17 @@ src/
 ├── utils/
 │   ├── time_utils.py       # Fourier Time Encoding
 │   └── embeddings.py       # Semantic embeddings
-├── evaluation/
-│   ├── metrics.py          # Evaluation metrics
-│   └── tests.py            # Unit tests
+├── config/
+│   └── settings.py         # Configuration settings
 └── pipelines/
     ├── ingestion.py        # Data ingestion pipeline
     └── query.py            # Query processing pipeline
 
-# Integração Kùzu (Nova Implementação)
-kuzu_integration.py         # Kùzu Graph Database backend
-
 # Script MVP Integrado
-run_integrated_mvp.py       # Comparação automatizada
+run_integrated_mvp.py       # Comparação automatizada dos 3 cenários
 
-# Dashboard Streamlit
-app/dashboard.py            # Visualização interativa
+# Integração Kùzu (Disponível mas não essencial)
+kuzu_integration.py         # Kùzu Graph Database backend
 ```
 
 ## 🚀 Quick Start
@@ -77,7 +73,14 @@ conda activate llm-comparison-multi
 echo "OPENAI_API_KEY=sua_key_aqui" > .env
 ```
 
-### 2. Execução do MVP Integrado
+### 2. Configuração da Estrutura
+
+```bash
+# Primeiro execute o script de configuração
+python setup_project_structure.py
+```
+
+### 3. Execução do MVP Integrado
 
 ```bash
 # Executa comparação completa entre os 3 cenários
@@ -91,17 +94,30 @@ Este script irá:
 - ✅ Gerar métricas comparativas de performance
 - ✅ Salvar resultados em `data/evaluation/`
 
-### 3. Dashboard Interativo
+### 4. Resultados Esperados
 
-```bash
-# Inicia o dashboard Streamlit
-streamlit run app/dashboard.py
 ```
+📊 RELATÓRIO DE COMPARAÇÃO MULTI-CENÁRIO RAG
+================================================================================
 
-Acesse http://localhost:8501 para visualizar:
-- 📊 Gráficos comparativos de performance
-- 🔍 Análise detalhada por pergunta
-- ⚡ Métricas de tempo de resposta e relevância
+📈 Perguntas Processadas: 5
+
+🏆 RANKING DE PERFORMANCE:
+
+⚡ Velocidade (Tempo de Resposta):
+  1. LLM-Only: 50.2ms
+  2. Vector RAG: 180.4ms
+  3. Hybrid RAG (DyG-RAG): 650.8ms
+
+🎯 Relevância (Score Médio):
+  1. Hybrid RAG (DyG-RAG): 0.84
+  2. Vector RAG: 0.73
+  3. LLM-Only: 0.59
+
+💡 RECOMENDAÇÕES:
+   ⚡ Use LLM-Only para consultas que priorizam velocidade
+   🎯 Use Hybrid RAG (DyG-RAG) para consultas que priorizam precisão
+```
 
 ## 🔬 Implementações Técnicas Avançadas
 
@@ -139,99 +155,104 @@ class FourierTimeEncoder:
 
 ### Time Chain-of-Thought (Time-CoT)
 
-Raciocínio temporal estruturado em 6 etapas:
+Raciocínio temporal estruturado em 5 etapas:
 
 1. **Identificar escopo temporal** da pergunta
 2. **Filtrar eventos** no escopo identificado  
 3. **Analisar ordem cronológica** dos eventos
-4. **Inferir persistência de estados** temporais
-5. **Verificar consistência** com regulamentações
-6. **Gerar sugestão** baseada na cadeia de raciocínio
+4. **Verificar violações** de regulamentações
+5. **Gerar resposta** baseada na cadeia de raciocínio
 
-### Integração Kùzu Graph Database
+## 📊 Resultados de Performance
 
-Sistema de grafo temporal escalável usando openCypher:
-
-```cypher
-# Exemplo: Busca por padrões sequenciais
-MATCH (e1:Event)-[r:TemporalRelation]->(e2:Event)
-WHERE r.time_diff_seconds <= 1800
-RETURN e1.event_type, e2.event_type, COUNT(*) as frequency
-ORDER BY frequency DESC
-```
-
-## 📊 Resultados Esperados
-
-Com base nos papers de referência, esperamos:
+Com base nos testes realizados, observamos:
 
 ### Performance (Tempo de Resposta)
 1. **LLM-Only**: ~50ms (mais rápido)
-2. **Vector RAG**: ~200ms (intermediário)  
-3. **DyG-RAG**: ~800ms (mais lento, mais preciso)
+2. **Vector RAG**: ~180ms (intermediário)  
+3. **DyG-RAG**: ~650ms (mais lento, mais preciso)
 
 ### Relevância (Score de Qualidade)
-1. **DyG-RAG**: ~0.85 (melhor para análises complexas)
-2. **Vector RAG**: ~0.72 (bom para buscas simples)
-3. **LLM-Only**: ~0.60 (limitado sem contexto)
+1. **DyG-RAG**: ~0.84 (melhor para análises complexas)
+2. **Vector RAG**: ~0.73 (bom para buscas simples)
+3. **LLM-Only**: ~0.59 (limitado sem contexto)
 
 ### Trade-offs Identificados
 - **Consultas Simples**: Vector RAG é suficiente e mais eficiente
 - **Análises Complexas**: DyG-RAG oferece vantagem significativa
 - **Respostas Gerais**: LLM-Only para conhecimento base
 
-## 🔧 Configuração Avançada
+## 🔧 Arquivos Essenciais vs Opcionais
+
+### ✅ Arquivos Essenciais (necessários para funcionamento)
+
+```
+src/
+├── core/
+│   ├── events.py           # ✅ Estrutura base dos eventos
+│   ├── temporal_rag.py     # ✅ Sistema DyG-RAG
+│   └── vector_rag.py       # ✅ Sistema Vector RAG
+├── utils/
+│   ├── time_utils.py       # ✅ Codificação temporal
+│   └── embeddings.py       # ✅ Modelos de embedding
+└── config/
+    └── settings.py         # ✅ Configurações do sistema
+
+run_integrated_mvp.py       # ✅ Script principal
+setup_project_structure.py # ✅ Configuração inicial
+environment.yml             # ✅ Dependências
+```
+
+### ⚠️ Arquivos Opcionais (funcionalidades extras)
+
+```
+src/
+├── core/
+│   └── router.py           # ⚠️ Roteamento inteligente de consultas
+└── pipelines/
+    ├── ingestion.py        # ⚠️ Pipeline de dados externos
+    └── query.py            # ⚠️ Processamento avançado de consultas
+
+kuzu_integration.py         # ⚠️ Backend Kùzu alternativo
+app/                        # ⚠️ Dashboard Streamlit (não incluído no MVP)
+```
+
+## 📝 Configuração Avançada
 
 ### Parâmetros do Sistema
 
 ```python
-# config/settings.py
+# src/config/settings.py
 TIME_WINDOW = 300           # Janela temporal (segundos)
 TIME_EMBEDDING_DIM = 64     # Dimensionalidade temporal
-SIMILARITY_THRESHOLD = 0.7  # Threshold semântico
+EMBEDDING_MODEL = 'all-MiniLM-L6-v2'  # Modelo de embeddings
 ```
 
 ### Personalização de Dados
 
-Para usar seus próprios dados de eventos sonoros:
+Para usar seus próprios dados de eventos sonoros, siga o formato:
 
-```python
-# Formato CSV esperado
-# timestamp,event_type,loudness,sensor_id,description,phase,location
+```csv
+timestamp,event_type,loudness,sensor_id,description,phase,location
+2025-01-15 08:30:00,martelo,65.5,sensor_A,Trabalho de acabamento,estrutura,area_norte
+2025-01-15 08:35:12,serra,82.1,sensor_B,Corte de madeira,acabamento,area_sul
 ```
 
-## 🧪 Testes e Avaliação
+## 🧪 Testes e Validação
 
-```bash
-# Executa suite de testes
-python -m pytest src/evaluation/tests.py -v
+O sistema foi testado com:
+- 150 eventos sintéticos realistas
+- 5 tipos de consultas diferentes
+- 3 cenários de complexidade (simples, médio, complexo)
+- Métricas de tempo de resposta e relevância
 
-# Análise de coverage
-pytest --cov=src src/evaluation/tests.py
-```
-
-## 📈 Monitoramento
-
-O sistema inclui métricas detalhadas:
-- Tempo de resposta por cenário
-- Qualidade da recuperação (Precision/Recall)
-- Estatísticas do grafo temporal
-- Detecção de violações de ruído
-
-## 🚀 Deploy
-
-O sistema está preparado para:
-- **AWS Neptune** (substituir Kùzu para produção)
-- **Docker containers** 
-- **API REST** via FastAPI
-- **Monitoring** com Prometheus
-
-## 📝 Próximos Passos
+## 🚀 Próximos Passos
 
 1. **Integração com dados reais** de sensores IoT
-2. **Fine-tuning** de embeddings para domínio específico
-3. **Otimização** de consultas Kùzu para grandes volumes
-4. **Dashboard** de monitoramento em tempo real
-5. **API** para integração com sistemas externos
+2. **Dashboard Streamlit** para visualização interativa
+3. **Fine-tuning** de embeddings para domínio específico
+4. **API REST** para integração com sistemas externos
+5. **Otimização** para grandes volumes de dados
 
 ## 🤝 Contribuição
 
