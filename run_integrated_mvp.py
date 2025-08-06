@@ -14,9 +14,31 @@ from pathlib import Path
 from typing import List, Dict, Any
 import numpy as np
 
-# Configuração de logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# Configuração melhorada de logging
+def setup_logging():
+    """Configura sistema de logging melhorado"""
+    # Remove handlers existentes
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+    
+    # Configura logging para console
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(sys.stdout),  # Força output no stdout
+            logging.FileHandler('mvp_execution.log', mode='w')  # Log em arquivo também
+        ]
+    )
+    
+    # Configura logger específico
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    
+    return logger
+
+# Configura logging antes de qualquer import
+logger = setup_logging()
 
 # Garante que o diretório src está no path
 project_root = Path(__file__).parent
@@ -24,18 +46,23 @@ sys.path.insert(0, str(project_root))
 
 # Importa apenas após configurar o path
 try:
+    logger.info("🔧 Importing core modules...")
     from src.core.events import DynamicEventUnit
     from src.core.temporal_rag import TemporalGraphRAG
     from src.core.vector_rag import TemporalVectorRAG
     from src.utils.embeddings import get_embedding_model
+    logger.info("✅ Core modules imported successfully")
 except ImportError as e:
-    logger.error(f"Erro de importação: {e}")
-    logger.error("Certifique-se de que a estrutura de diretórios está correta")
-    logger.error("Execute primeiro: python setup_project_structure.py")
+    logger.error(f"❌ Import error: {e}")
+    logger.error("Make sure you have run: conda env update -f environment.yml")
+    logger.error("If the error persists, try: pip install --upgrade pyarrow datasets sentence-transformers")
     sys.exit(1)
 
 class MockLLM:
     """Mock LLM para testes sem API externa"""
+    
+    def __init__(self):
+        logger.info("🤖 Initializing MockLLM...")
     
     def generate_response(self, query: str, context: str = "") -> str:
         """Gera resposta mock baseada na consulta"""
@@ -60,7 +87,7 @@ class MockLLM:
 
 def generate_synthetic_data(num_events: int = 150) -> List[DynamicEventUnit]:
     """Gera dados sintéticos de eventos sonoros para teste"""
-    logger.info(f"Generating {num_events} synthetic events...")
+    logger.info(f"📊 Generating {num_events} synthetic events...")
     
     events = []
     base_time = datetime.now() - timedelta(days=7)
@@ -84,17 +111,16 @@ def generate_synthetic_data(num_events: int = 150) -> List[DynamicEventUnit]:
         event_type = np.random.choice(list(event_types.keys()))
         type_config = event_types[event_type]
         
-        # Gera timestamp com distribuição mais realista (mais eventos durante horário comercial)
+        # Gera timestamp com distribuição mais realista
         days_offset = np.random.uniform(0, 7)
         
-        # Distribuição de probabilidade por hora (mais eventos no horário comercial) - CORRIGIDA
+        # Distribuição de probabilidade por hora
         hour_weights = np.array([
             0.01, 0.01, 0.01, 0.01, 0.01, 0.02,  # 0-5h (muito baixo)
             0.03, 0.08, 0.12, 0.15, 0.12, 0.10,  # 6-11h (crescente)
             0.08, 0.12, 0.15, 0.12, 0.08, 0.05,  # 12-17h (alto)
             0.03, 0.02, 0.01, 0.01, 0.01, 0.01   # 18-23h (decrescente)
         ])
-        # Normaliza para garantir que soma seja 1.0
         hour_weights = hour_weights / hour_weights.sum()
         hour_weight = np.random.choice(range(24), p=hour_weights)
         
@@ -133,93 +159,120 @@ def generate_synthetic_data(num_events: int = 150) -> List[DynamicEventUnit]:
         )
         
         events.append(event)
+        
+        # Log de progresso
+        if (i + 1) % 30 == 0:
+            logger.info(f"  Generated {i + 1}/{num_events} events...")
     
     # Ordena cronologicamente
     events.sort(key=lambda e: e.timestamp)
-    logger.info(f"Generated {len(events)} synthetic events")
+    logger.info(f"✅ Generated {len(events)} synthetic events successfully")
     return events
 
 class MultiScenarioComparison:
     """Classe principal para comparação entre os três cenários"""
     
     def __init__(self):
-        logger.info("Initializing MultiScenarioComparison...")
+        logger.info("🚀 Initializing MultiScenarioComparison...")
         
-        # Inicializa componentes
-        self.embedding_model = get_embedding_model()
-        self.mock_llm = MockLLM()
-        
-        # Inicialização dos sistemas RAG
-        self.vector_rag = TemporalVectorRAG(embedding_model_name=None, time_weight=0.3)
-        self.graph_rag = TemporalGraphRAG(embedding_model_name=None, time_dim=64, time_window=300)
-        
-        # Dados sintéticos
-        self.events = generate_synthetic_data(150)
-        
-        # Perguntas de teste
-        self.test_questions = [
-            {
-                'id': 'Q1',
-                'question': 'Houve violações de normas de ruído na última semana?',
-                'type': 'factual',
-                'expected_complexity': 'medium'
-            },
-            {
-                'id': 'Q2', 
-                'question': 'Qual foi o padrão de ruído durante o horário comercial nos últimos 3 dias?',
-                'type': 'analytical',
-                'expected_complexity': 'high'
-            },
-            {
-                'id': 'Q3',
-                'question': 'Quantos eventos de britadeira ocorreram ontem?',
-                'type': 'simple_count',
-                'expected_complexity': 'low'
-            },
-            {
-                'id': 'Q4',
-                'question': 'Por que houve picos de ruído na terça-feira passada e como prevenir?',
-                'type': 'causal_analysis',
-                'expected_complexity': 'high'
-            },
-            {
-                'id': 'Q5',
-                'question': 'Há correlação entre o tipo de equipamento e violações de ruído?',
-                'type': 'correlation',
-                'expected_complexity': 'high'
-            }
-        ]
-        
-        logger.info("MultiScenarioComparison initialized successfully")
+        try:
+            # Inicializa componentes
+            logger.info("  Loading embedding model...")
+            self.embedding_model = get_embedding_model()
+            
+            logger.info("  Initializing MockLLM...")
+            self.mock_llm = MockLLM()
+            
+            # Inicialização dos sistemas RAG
+            logger.info("  Initializing TemporalVectorRAG...")
+            self.vector_rag = TemporalVectorRAG(embedding_model_name=None, time_weight=0.3)
+            
+            logger.info("  Initializing TemporalGraphRAG...")
+            self.graph_rag = TemporalGraphRAG(embedding_model_name=None, time_dim=64, time_window=300)
+            
+            # Dados sintéticos
+            logger.info("  Generating synthetic data...")
+            self.events = generate_synthetic_data(150)
+            
+            # Perguntas de teste
+            self.test_questions = [
+                {
+                    'id': 'Q1',
+                    'question': 'Houve violações de normas de ruído na última semana?',
+                    'type': 'factual',
+                    'expected_complexity': 'medium'
+                },
+                {
+                    'id': 'Q2', 
+                    'question': 'Qual foi o padrão de ruído durante o horário comercial nos últimos 3 dias?',
+                    'type': 'analytical',
+                    'expected_complexity': 'high'
+                },
+                {
+                    'id': 'Q3',
+                    'question': 'Quantos eventos de britadeira ocorreram ontem?',
+                    'type': 'simple_count',
+                    'expected_complexity': 'low'
+                },
+                {
+                    'id': 'Q4',
+                    'question': 'Por que houve picos de ruído na terça-feira passada e como prevenir?',
+                    'type': 'causal_analysis',
+                    'expected_complexity': 'high'
+                },
+                {
+                    'id': 'Q5',
+                    'question': 'Há correlação entre o tipo de equipamento e violações de ruído?',
+                    'type': 'correlation',
+                    'expected_complexity': 'high'
+                }
+            ]
+            
+            logger.info("✅ MultiScenarioComparison initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"❌ Error during initialization: {str(e)}")
+            raise
     
     def setup_systems(self):
         """Configura os sistemas com os dados sintéticos"""
-        logger.info("Setting up RAG systems with synthetic data...")
+        logger.info("⚙️ Setting up RAG systems with synthetic data...")
         
-        # Carrega dados no Vector RAG
-        logger.info("Loading events into Vector RAG...")
-        for event in self.events:
-            self.vector_rag.add_event(event)
-        
-        # Carrega dados no Graph RAG
-        logger.info("Loading events into Graph RAG...")
-        for event in self.events:
-            self.graph_rag.add_event(event)
-        
-        logger.info(f"Loaded {len(self.events)} events into both systems")
-        
-        # Log de estatísticas
-        vector_stats = self.vector_rag.get_statistics()
-        graph_stats = self.graph_rag.get_statistics()
-        
-        logger.info(f"Vector RAG Stats: {vector_stats}")
-        logger.info(f"Graph RAG Stats: {graph_stats}")
+        try:
+            # Carrega dados no Vector RAG
+            logger.info("  Loading events into Vector RAG...")
+            for i, event in enumerate(self.events):
+                self.vector_rag.add_event(event)
+                if (i + 1) % 50 == 0:
+                    logger.info(f"    Loaded {i + 1}/{len(self.events)} events into Vector RAG...")
+            
+            # Carrega dados no Graph RAG
+            logger.info("  Loading events into Graph RAG...")
+            for i, event in enumerate(self.events):
+                self.graph_rag.add_event(event)
+                if (i + 1) % 50 == 0:
+                    logger.info(f"    Loaded {i + 1}/{len(self.events)} events into Graph RAG...")
+            
+            logger.info(f"✅ Loaded {len(self.events)} events into both systems")
+            
+            # Log de estatísticas
+            vector_stats = self.vector_rag.get_statistics()
+            graph_stats = self.graph_rag.get_statistics()
+            
+            logger.info(f"📊 Vector RAG Stats: {vector_stats['total_events']} events")
+            logger.info(f"📊 Graph RAG Stats: {graph_stats['total_events']} events, {graph_stats['total_connections']} connections")
+            
+        except Exception as e:
+            logger.error(f"❌ Error setting up systems: {str(e)}")
+            raise
     
     def run_scenario_a_vector_rag(self, question: str) -> Dict[str, Any]:
         """Executa cenário A: Vector RAG tradicional"""
         start_time = time.time()
         
         try:
+            logger.debug(f"🔍 Running Vector RAG for: {question[:50]}...")
+            
             # Recuperação baseada em similaridade vetorial
             retrieved_events = self.vector_rag.retrieve(
                 query=question,
@@ -235,7 +288,7 @@ class MultiScenarioComparison:
             # Calcula score de relevância baseado nos eventos recuperados
             if retrieved_events:
                 avg_similarity = np.mean([score for _, score in retrieved_events])
-                relevance_score = min(0.9, max(0.4, avg_similarity + 0.1))  # Normaliza entre 0.4-0.9
+                relevance_score = min(0.9, max(0.4, avg_similarity + 0.1))
             else:
                 relevance_score = 0.0
             
@@ -248,7 +301,7 @@ class MultiScenarioComparison:
             }
             
         except Exception as e:
-            logger.error(f"Error in Scenario A: {str(e)}")
+            logger.error(f"❌ Error in Scenario A: {str(e)}")
             return {
                 'answer': f"Erro no processamento: {str(e)}",
                 'response_time': time.time() - start_time,
@@ -262,6 +315,8 @@ class MultiScenarioComparison:
         start_time = time.time()
         
         try:
+            logger.debug(f"🔗 Running Hybrid RAG for: {question[:50]}...")
+            
             # Recuperação temporal usando o grafo dinâmico
             retrieved_events = self.graph_rag.temporal_retrieval(
                 query=question,
@@ -274,7 +329,7 @@ class MultiScenarioComparison:
             
             end_time = time.time()
             
-            # Score de relevância estimado para DyG-RAG (tipicamente maior)
+            # Score de relevância estimado para DyG-RAG
             if retrieved_events:
                 relevance_score = min(0.95, max(0.6, 0.85 + np.random.normal(0, 0.05)))
             else:
@@ -289,7 +344,7 @@ class MultiScenarioComparison:
             }
             
         except Exception as e:
-            logger.error(f"Error in Scenario B: {str(e)}")
+            logger.error(f"❌ Error in Scenario B: {str(e)}")
             return {
                 'answer': f"Erro no processamento: {str(e)}",
                 'response_time': time.time() - start_time,
@@ -303,12 +358,14 @@ class MultiScenarioComparison:
         start_time = time.time()
         
         try:
+            logger.debug(f"🤖 Running LLM-Only for: {question[:50]}...")
+            
             # Gera resposta diretamente com o LLM mock
             response = self.mock_llm.generate_response(question)
             
             end_time = time.time()
             
-            # Score de relevância estimado para LLM-only (tipicamente menor)
+            # Score de relevância estimado para LLM-only
             relevance_score = min(0.8, max(0.3, 0.60 + np.random.normal(0, 0.08)))
             
             return {
@@ -320,7 +377,7 @@ class MultiScenarioComparison:
             }
             
         except Exception as e:
-            logger.error(f"Error in Scenario C: {str(e)}")
+            logger.error(f"❌ Error in Scenario C: {str(e)}")
             return {
                 'answer': f"Erro no processamento: {str(e)}",
                 'response_time': time.time() - start_time,
@@ -331,19 +388,24 @@ class MultiScenarioComparison:
     
     def evaluate_all_scenarios(self) -> List[Dict[str, Any]]:
         """Executa comparação completa entre todos os cenários"""
-        logger.info("Starting comprehensive scenario evaluation...")
+        logger.info("🧪 Starting comprehensive scenario evaluation...")
         
         results = []
         
-        for question_data in self.test_questions:
+        for i, question_data in enumerate(self.test_questions, 1):
             question = question_data['question']
             question_id = question_data['id']
             
-            logger.info(f"Processing question {question_id}: {question}")
+            logger.info(f"❓ Processing question {i}/{len(self.test_questions)} - {question_id}: {question}")
             
             # Executa os três cenários
+            logger.info("  ⚡ Running Vector RAG...")
             scenario_a_result = self.run_scenario_a_vector_rag(question)
+            
+            logger.info("  🔗 Running Hybrid RAG (DyG-RAG)...")
             scenario_b_result = self.run_scenario_b_hybrid_rag(question)
+            
+            logger.info("  🤖 Running LLM-Only...")
             scenario_c_result = self.run_scenario_c_llm_only(question)
             
             # Compila resultado para esta pergunta
@@ -360,15 +422,18 @@ class MultiScenarioComparison:
             results.append(comparison_result)
             
             # Log do resultado
-            logger.info(f"Question {question_id} completed:")
-            logger.info(f"  Vector RAG: {scenario_a_result['response_time']:.3f}s")
-            logger.info(f"  Hybrid RAG: {scenario_b_result['response_time']:.3f}s")
-            logger.info(f"  LLM-Only: {scenario_c_result['response_time']:.3f}s")
+            logger.info(f"✅ Question {question_id} completed:")
+            logger.info(f"    Vector RAG: {scenario_a_result['response_time']:.3f}s, relevance: {scenario_a_result['relevance_score']:.2f}")
+            logger.info(f"    Hybrid RAG: {scenario_b_result['response_time']:.3f}s, relevance: {scenario_b_result['relevance_score']:.2f}")
+            logger.info(f"    LLM-Only: {scenario_c_result['response_time']:.3f}s, relevance: {scenario_c_result['relevance_score']:.2f}")
         
+        logger.info(f"🎉 All {len(self.test_questions)} questions processed successfully!")
         return results
     
     def generate_performance_summary(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Gera resumo de performance comparativa"""
+        logger.info("📊 Generating performance summary...")
+        
         summary = {
             'total_questions': len(results),
             'scenarios': {
@@ -390,7 +455,7 @@ class MultiScenarioComparison:
                 response_times.append(scenario_result['response_time'])
                 relevance_scores.append(scenario_result['relevance_score'])
                 
-                # Conta itens recuperados (diferentes chaves por cenário)
+                # Conta itens recuperados
                 if 'retrieved_chunks' in scenario_result:
                     retrieved_counts.append(scenario_result['retrieved_chunks'])
                 elif 'retrieved_events' in scenario_result:
@@ -428,6 +493,8 @@ class MultiScenarioComparison:
     
     def save_results(self, results: List[Dict[str, Any]], summary: Dict[str, Any]):
         """Salva resultados em arquivos JSON"""
+        logger.info("💾 Saving results to files...")
+        
         # Cria diretório se não existir
         output_dir = Path("data/evaluation")
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -442,8 +509,8 @@ class MultiScenarioComparison:
         with open(summary_file, 'w', encoding='utf-8') as f:
             json.dump(summary, f, indent=2, ensure_ascii=False, default=str)
         
-        logger.info(f"Results saved to {results_file}")
-        logger.info(f"Summary saved to {summary_file}")
+        logger.info(f"✅ Results saved to {results_file}")
+        logger.info(f"✅ Summary saved to {summary_file}")
         
         return results_file, summary_file
     
@@ -492,32 +559,43 @@ class MultiScenarioComparison:
 def main():
     """Função principal do script MVP"""
     logger.info("🚀 Starting Multi-Scenario RAG Comparison MVP")
+    print("🚀 Multi-Scenario RAG Comparison MVP")
+    print("="*50)
     
     try:
         # Inicializa o sistema de comparação
+        print("📝 Step 1: Initializing comparison system...")
         comparison = MultiScenarioComparison()
         
         # Configura os sistemas com dados sintéticos
+        print("📝 Step 2: Setting up RAG systems...")
         comparison.setup_systems()
         
         # Executa avaliação completa
+        print("📝 Step 3: Running evaluation across all scenarios...")
         results = comparison.evaluate_all_scenarios()
         
         # Gera resumo de performance
+        print("📝 Step 4: Generating performance analysis...")
         summary = comparison.generate_performance_summary(results)
         
         # Salva resultados
+        print("📝 Step 5: Saving results...")
         comparison.save_results(results, summary)
         
         # Exibe relatório no console
+        print("📝 Step 6: Displaying results...")
         comparison.print_summary_report(summary)
         
         logger.info("✅ Multi-scenario comparison completed successfully!")
+        print("\n🎉 Multi-scenario comparison completed successfully!")
+        print("📁 Check 'data/evaluation/' folder for detailed results")
         
         return results, summary
         
     except Exception as e:
         logger.error(f"❌ Error in main execution: {str(e)}")
+        print(f"❌ Error: {str(e)}")
         import traceback
         traceback.print_exc()
         raise
