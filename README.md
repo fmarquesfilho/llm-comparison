@@ -1,6 +1,6 @@
-# 🤖 Sistema Multi-Cenário RAG - Construção Civil
+# 🤖 Avaliação Multi-Cenário RAG
 
-Sistema completo para comparação entre três abordagens de NLP aplicadas ao domínio de construção civil, baseado nos artigos científicos mais recentes sobre RAG temporal e grafos dinâmicos.
+Sistema completo para comparação entre três abordagens baseado nos artigos científicos mais recentes sobre RAG temporal e grafos dinâmicos.
 
 ## 📚 Base Científica
 
