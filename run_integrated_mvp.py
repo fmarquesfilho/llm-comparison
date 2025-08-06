@@ -87,13 +87,15 @@ def generate_synthetic_data(num_events: int = 150) -> List[DynamicEventUnit]:
         # Gera timestamp com distribuição mais realista (mais eventos durante horário comercial)
         days_offset = np.random.uniform(0, 7)
         
-        # Distribuição de probabilidade por hora (mais eventos no horário comercial)
+        # Distribuição de probabilidade por hora (mais eventos no horário comercial) - CORRIGIDA
         hour_weights = np.array([
             0.01, 0.01, 0.01, 0.01, 0.01, 0.02,  # 0-5h (muito baixo)
             0.03, 0.08, 0.12, 0.15, 0.12, 0.10,  # 6-11h (crescente)
             0.08, 0.12, 0.15, 0.12, 0.08, 0.05,  # 12-17h (alto)
             0.03, 0.02, 0.01, 0.01, 0.01, 0.01   # 18-23h (decrescente)
         ])
+        # Normaliza para garantir que soma seja 1.0
+        hour_weights = hour_weights / hour_weights.sum()
         hour_weight = np.random.choice(range(24), p=hour_weights)
         
         timestamp = base_time + timedelta(
