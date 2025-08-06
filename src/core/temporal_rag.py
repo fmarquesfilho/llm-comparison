@@ -8,7 +8,6 @@ import logging
 from .events import DynamicEventUnit
 from ..utils.time_utils import FourierTimeEncoder
 from ..utils.embeddings import cosine_similarity, get_embedding_model
-from ..config import settings
 
 logger = logging.getLogger(__name__)
 
